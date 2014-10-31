@@ -1,0 +1,37 @@
+<configuration>
+	<appProperties>
+		<appName>mix 各种日志文件比率统计</appName>
+		<interval>20</interval>
+		<output_prefix>/home/hadoop/test/output/log</output_prefix>
+		<output_suffix>rate</output_suffix>
+		<separator></separator>
+		<expose_threshold>2000</expose_threshold>
+		<checkpointPath>/home/hadoop/test/checkpoint</checkpointPath>
+	</appProperties>
+	<logProperties>	
+		<log>
+			<topicLogType>click</topicLogType>
+			<appClass>com.asiainfo.mix.rate.impl.Click</appClass>
+			<hdfsPath>/home/hadoop/test/click</hdfsPath>
+			<items>loglen,logver,logtime,playid,adid,orderid,activityid,ex_uid,gender,cookie,streamsrc,clientip,ua,referer,loadpage,playstyle,playlocation,pageid,userinteristeid,areaid,sizeid,ad_pos_id,bidtime,cheatflag,day_id,hour_id</items>
+			<groupByKey>ad_pos_id</groupByKey>
+			<outputItems>[count]</outputItems>
+		</log>
+		<log>
+			<topicLogType>expose</topicLogType>
+			<appClass>com.asiainfo.mix.rate.impl.Expose</appClass>
+			<hdfsPath>/home/hadoop/test/expose</hdfsPath>
+			<items>loglen,logver,logtime,cost,playid,adid,orderid,activityid,ex_uid,gender,cookie,streamsrc,clientip,ua,referer,playstyle,playlocation,pageid,userinteristeid,areaid,sizeid,ad_pos_id,bidtime,cheatflag,day_id,hour_id</items>
+			<groupByKey>ad_pos_id</groupByKey>
+			<outputItems>[count],cost</outputItems>
+		</log>
+		<log>
+			<topicLogType>bid</topicLogType>
+			<appClass>com.asiainfo.mix.rate.impl.Bid</appClass>
+			<hdfsPath>/home/hadoop/test/bid</hdfsPath>
+			<items>loglen,logver,logtype,logtime,exchange_id,bid_id,client_id,area_id,exchange_userid,useragent,usergender,url,mediasite_id,pageid,keyword,baiduinteristedid,exceptindustry,ad_pos_info,joinbid_ad_num,joinbid_ad_info,insert,paid,app_id,app_name,device_type,os,ctr_value,mobile,device_id,mac,connection type,carrier,app_category,idfa,handletime</items>
+			<groupByKey>ad_pos_info</groupByKey>
+			<outputItems>[count]</outputItems>
+		</log>
+	</logProperties>
+</configuration>
