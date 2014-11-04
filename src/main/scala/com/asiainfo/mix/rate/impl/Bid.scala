@@ -19,7 +19,8 @@ class Bid extends StreamAction with Serializable{
     val outputItems = propMap("outputItems").split(",")
     val doCompute = Commonhandles.sumItems(topicLogType, outputItems)
     val setGroupKey = groupKeyOut(topicLogType, groupKey)
-    val inputDstream = inputStream.filter(bidFilter).map(setGroupKey).groupByKey.map(doCompute)
+    
+    val inputDstream = inputStream.filter(bidFilter).map(setGroupKey).map(doCompute)
     inputDstream
   }
 
@@ -42,7 +43,7 @@ class Bid extends StreamAction with Serializable{
       val groupKey = groupkeyEdit(ad_pos_info)
       (groupKey.mkString, record)
     } else {
-      val groupKeySet = Commonhandles.groupkeyEdit(groupkey, topicLogType)
+      val groupKeySet = Commonhandles.groupkeyEdit(groupkey)
       groupKeySet(record)
     }
   }

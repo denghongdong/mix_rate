@@ -1,9 +1,9 @@
 1、程序的入口函数类：
-com.asiainfo.mix.rate.MixAateApp
+com.asiainfo.mix.rate.MixRateApp
 本机调试运行：
-直接运行 com.asiainfo.mix.rate.MixAateApp即可。
+直接运行 com.asiainfo.mix.rate.MixRateApp即可。
 spark yarn运行：
-./bin/spark-submit --class com.asiainfo.mix.rate.MixAateApp ./lib/streaming-log-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+./bin/spark-submit --class com.asiainfo.mix.rate.MixRateApp ./lib/streaming-log-0.0.1-SNAPSHOT-jar-with-dependencies.jar
 
 2、关于配置文件参数说明：
 <configuration>
