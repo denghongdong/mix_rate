@@ -27,8 +27,6 @@ class HDFSCopy extends Runnable {
   var historyRddWriter: FileWriter = _
 
   val conf = new Configuration()
-  //local test 用
-  conf.addResource(new Path("conf/core-site.xml"))
   val HDFSFileSytem = FileSystem.get(conf)
 
   /**
