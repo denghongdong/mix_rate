@@ -35,28 +35,6 @@ object Commonhandles extends Logging {
     val rowKey = (for (key <- groupKey) yield (keyMap(key))).mkString
     (rowKey, input)
   }
-
-  /**
-   * According to the same primary key to compute record's output Items total count.
-   */
-//  def sumItems(topicLogType: String, outputItems: Array[String]) = (dataSet: Tuple2[String, Seq[Array[(String, String)]]]) => {
-//    var resultMap = Map[String, Double]()
-//    outputItems.foreach(f => {
-//      val outItem = f.trim
-//      if (outItem == "[count]") {
-//        resultMap += (outItem -> (dataSet._2.size).toDouble)
-//      } else {
-//        (dataSet._2).foreach(eatchArray => {
-//          val kv = eatchArray.toMap
-//          resultMap += (outItem -> (resultMap.getOrElse(outItem, 0d) + kv(outItem).toDouble))
-//        })
-//      }
-//    })
-//    // example: bid.[count]:2000|bid.xxx:3000
-//    val result = (for (item <- outputItems) yield (topicLogType + "." + item + ":" + resultMap(item))).mkString("|")
-//    logWarning("主key:" + dataSet._1 + " value:" + result)
-//    (dataSet._1, result)
-//  }
   
   /**
    * According to the same primary key to compute record's output Items total count.

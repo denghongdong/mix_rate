@@ -8,6 +8,7 @@ import org.apache.spark.streaming.Seconds
 import org.apache.spark.SparkConf
 import scala.collection.mutable.Queue
 import scala.collection.mutable.Map
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * @author surq
@@ -18,28 +19,29 @@ import scala.collection.mutable.Map
 object MixRateApp extends Logging {
 
   var separator = ""
-  var totalOutPutItem:Array[String] = _
-  
+  var totalOutPutItem: Array[(String, String)] = _
+
   def main(args: Array[String]): Unit = {
 
+    require(args.size == 1,"Please input the flg that is  Whether run copy files script. [true]:yes ,[false]:no")
     XmlAnalysis.annalysis("conf/logconf.xml")
+    // 是否运行拷贝文件脚本
+    val copy_flg = args(0).toBoolean
+    if (copy_flg) {
+      val hDFSCopy = new HDFSCopy()
+      val flg = hDFSCopy.scanStart
+    }
+
     val AppPropertiesMap = XmlAnalysis.getAppPropertiesMap
     val logStructMap = XmlAnalysis.getLogStructMap
-
     separator = AppPropertiesMap("separator")
-    // 各输出字段加前辍［logtype.item］
-    totalOutPutItem = (for (log <- logStructMap; logtype = log._1) yield {
-      val outputItemList = ((log._2("outputItems")).split(",")).map(f => logtype + "." + f)
-      outputItemList.mkString(",")
-    }).mkString(",").split(",")
-
+    totalOutPutItem = (AppPropertiesMap("msgStruct").split(",")).zip(AppPropertiesMap("msgItems").split(","))
     val appName = AppPropertiesMap("appName")
     val streamSpace = AppPropertiesMap("interval")
     val output_prefix = AppPropertiesMap("output_prefix")
     val output_suffix = AppPropertiesMap("output_suffix")
     val expose_threshold = AppPropertiesMap("expose_threshold")
     val checkpointPath = AppPropertiesMap("checkpointPath")
-    val setThreshold = updateFunc(expose_threshold.toInt)
 
     // TODO
     val master = "local[2]"
@@ -64,10 +66,23 @@ object MixRateApp extends Logging {
     })
 
     // union handle
-    val joinsDstreams = dstreamList.reduceLeft(_ union _).updateStateByKey(setThreshold).map(dataMergeBykey)
-    joinsDstreams.saveAsTextFiles(output_prefix, output_suffix)
+    val setThreshold = updateFunc(expose_threshold.toInt)
+    val joinsDstreams = dstreamList.reduceLeft(_ union _).updateStateByKey(setThreshold).map(dataFormatBykey).mapPartitions(responseSend)
+    //        joinsDstreams.saveAsTextFiles(output_prefix, output_suffix)
+    joinsDstreams.foreachRDD(rdd => { if (rdd.partitions.size > 0) rdd.count })
     ssc.start()
     ssc.awaitTermination()
+  }
+
+  /**
+   * send http response by partition.
+   */
+  def responseSend(iter: Iterator[String]): Iterator[String] = {
+    val res = ArrayBuffer[String]()
+    iter.foreach(res += _)
+    val st = res.toArray
+    HttpUtil.msgSend(st)
+    res.iterator
   }
 
   /**
@@ -104,55 +119,55 @@ object MixRateApp extends Logging {
   }
 
   /**
-   * two dstreams Union to one dstream.<br>
-   * value: each of dstream is separated by "|"<br>
-   */
-//  val dstreamsUnion = (d1: DStream[(String, String)], d2: DStream[(String, String)]) => d1.union(d2)
-
-  /**
    * The summation of each field.
    * example: bid.[count]:1000,expose.[count]:2000,expose.price:4000.0,click.[count]:3000
    */
-  def dataMergeBykey(resultSet: Tuple2[String, Queue[Map[String, Double]]]) = {
-    val resultMap = Map[String, Double]()
+  def dataFormatBykey(resultSet: Tuple2[String, Tuple2[Map[String, Double], Queue[Map[String, Double]]]]) = {
     val key = resultSet._1
-    val queueSets = resultSet._2
-    for (map <- queueSets; item <- totalOutPutItem) {
-      resultMap += (item -> ((map.getOrElse(item, 0d)) + (resultMap.getOrElse(item, 0d))))
-    }
+    val outputMap = (resultSet._2)._1
     val resut = for (item <- totalOutPutItem) yield {
-      val value = (resultMap.getOrElse(item, 0d)).toString
-      if (item.matches(""".*(\[count\])$""")) {
-        item + ":" + value.substring(0, value.indexOf("."))
-      } else {
-        item + ":" + value
-      }
+      var value = ""
+      if ((item._1).toLowerCase == "[rowkey]") value = key
+      else value = (outputMap.getOrElse(item._1, 0d)).toString
+      // [count] as key , transform value's type double to int.
+      if ((item._1).matches(""".*(\[count\])$""")) item._2 + ":" + value.substring(0, value.indexOf("."))
+      else item._2 + ":" + value
     }
-    key + "	" + resut.mkString(",")
+    resut.mkString(",")
   }
-  
+
   /**
    * updateStateByKey
    */
-  def updateFunc(expose_threshold: Int) = (values: Seq[String], state: Option[Queue[Map[String, Double]]]) => {
+  def updateFunc(expose_threshold: Int) = (values: Seq[String], state: Option[(Map[String, Double], Queue[Map[String, Double]])]) => {
+
+    val stateStruct = state.getOrElse(Tuple2(Map[String, Double](), new Queue[Map[String, Double]]()))
+    val keepMap = stateStruct._1
+    val stateQueue = stateStruct._2
 
     val currentMap = Map[String, Double]()
     for (each <- values; item <- each.split("\\|")) {
       val value = item.trim.split(":")
-      currentMap += (value(0) -> (currentMap.getOrElse(value(0), 0d)+ value(1).toDouble))
+      currentMap += (value(0) -> (currentMap.getOrElse(value(0), 0d) + value(1).toDouble))
+      keepMap += (value(0) -> (keepMap.getOrElse(value(0), 0d) + value(1).toDouble))
     }
-    val stateQueue = state.getOrElse(new Queue[Map[String, Double]]())
-    stateQueue.enqueue(currentMap)
-    var sum = 0d
-    var index = stateQueue.size - 1
-    while (sum < expose_threshold && index >= 0) {
-      val maptmp = stateQueue(index)
-      val exposeCunt = (maptmp.getOrElse("expose.[count]", 0d))
-      sum = sum + exposeCunt
-      index = index - 1
+    if (!currentMap.isEmpty) {
+      // put current batch bata into stateQueue.
+      stateQueue.enqueue(currentMap)
+      var overValue = keepMap.getOrElse("expose.[count]", 0d) - expose_threshold
+      while (overValue > 0) {
+        val subtractValue = overValue - stateQueue(0).getOrElse("expose.[count]", 0d)
+        if (subtractValue > 0) {
+          overValue = subtractValue
+          val dropMap = stateQueue.dequeue
+          dropMap foreach { enm =>
+            {
+              keepMap.update(enm._1, keepMap(enm._1) - enm._2)
+            }
+          }
+        }
+      }
     }
-    // form Queue move
-    0 to index foreach (f => { stateQueue.dequeue })
-    Some(stateQueue)
+    Some((keepMap, stateQueue))
   }
 }

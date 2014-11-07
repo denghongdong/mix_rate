@@ -1,18 +1,35 @@
 <configuration>
 	<appProperties>
 		<appName>mix 各种日志文件比率统计</appName>
-		<interval>20</interval>
+		<interval>10</interval>
 		<output_prefix>/home/hadoop/test/output/log</output_prefix>
 		<output_suffix>rate</output_suffix>
 		<separator></separator>
+		<!--test tmp start -->
 		<expose_threshold>2000</expose_threshold>
 		<checkpointPath>/home/hadoop/test/checkpoint</checkpointPath>
+		<!--test tmp end -->
+		<msgStruct>[rowkey],bid.[count],expose.[count],click.[count],expose.cost</msgStruct>
+		<msgItems>adslot_id,bid_count,imp_count,click_count,win_price_sum</msgItems>
 	</appProperties>
-	<logProperties>	
+	<hdfsScanner>
+		<scanInterval>2</scanInterval>
+		<hdfsStartTime>20141105</hdfsStartTime>
+		<localLogDir>/home/hadoop/test/logs</localLogDir>
+	</hdfsScanner>
+	<sendMode>
+		<serverURL>http://localhost:8080/p</serverURL>
+		<Content_Type>application/json</Content_Type>
+		<server_type>2</server_type>
+		<oper_type>100</oper_type>
+		<msg_threshold>1000</msg_threshold>
+	</sendMode>
+	<logProperties>
 		<log>
 			<topicLogType>click</topicLogType>
 			<appClass>com.asiainfo.mix.rate.impl.Click</appClass>
-			<hdfsPath>/home/hadoop/test/click</hdfsPath>
+			<sourceHDFSPath>/sparktest/clickinput</sourceHDFSPath>
+			<hdfsPath>/test/clickinput</hdfsPath>
 			<items>loglen,logver,logtime,playid,adid,orderid,activityid,ex_uid,gender,cookie,streamsrc,clientip,ua,referer,loadpage,playstyle,playlocation,pageid,userinteristeid,areaid,sizeid,ad_pos_id,bidtime,cheatflag,day_id,hour_id</items>
 			<groupByKey>ad_pos_id</groupByKey>
 			<outputItems>[count]</outputItems>
@@ -20,7 +37,8 @@
 		<log>
 			<topicLogType>expose</topicLogType>
 			<appClass>com.asiainfo.mix.rate.impl.Expose</appClass>
-			<hdfsPath>/home/hadoop/test/expose</hdfsPath>
+			<sourceHDFSPath>/sparktest/exposeinput</sourceHDFSPath>
+			<hdfsPath>/test/exposeinput</hdfsPath>
 			<items>loglen,logver,logtime,cost,playid,adid,orderid,activityid,ex_uid,gender,cookie,streamsrc,clientip,ua,referer,playstyle,playlocation,pageid,userinteristeid,areaid,sizeid,ad_pos_id,bidtime,cheatflag,day_id,hour_id</items>
 			<groupByKey>ad_pos_id</groupByKey>
 			<outputItems>[count],cost</outputItems>
@@ -28,8 +46,10 @@
 		<log>
 			<topicLogType>bid</topicLogType>
 			<appClass>com.asiainfo.mix.rate.impl.Bid</appClass>
-			<hdfsPath>/home/hadoop/test/bid</hdfsPath>
-			<items>loglen,logver,logtype,logtime,exchange_id,bid_id,client_id,area_id,exchange_userid,useragent,usergender,url,mediasite_id,pageid,keyword,baiduinteristedid,exceptindustry,ad_pos_info,joinbid_ad_num,joinbid_ad_info,insert,paid,app_id,app_name,device_type,os,ctr_value,mobile,device_id,mac,connection type,carrier,app_category,idfa,handletime</items>
+			<sourceHDFSPath>/sparktest/bidinput</sourceHDFSPath>
+			<hdfsPath>/test/bidinput</hdfsPath>
+			<items>loglen,logver,logtype,logtime,exchange_id,bid_id,client_id,area_id,exchange_userid,useragent,usergender,url,mediasite_id,pageid,keyword,baiduinteristedid,exceptindustry,ad_pos_info,joinbid_ad_num,joinbid_ad_info,insert,paid,app_id,app_name,device_type,os,ctr_value,mobile,device_id,mac,connection
+				type,carrier,app_category,idfa,handletime</items>
 			<groupByKey>ad_pos_info</groupByKey>
 			<outputItems>[count]</outputItems>
 		</log>
