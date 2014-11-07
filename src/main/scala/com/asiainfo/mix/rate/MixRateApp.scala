@@ -23,14 +23,13 @@ object MixRateApp extends Logging {
 
   def main(args: Array[String]): Unit = {
 
-    require(args.size == 1,"Please input the flg that is  Whether run copy files script. [true]:yes ,[false]:no")
+    require(args.size == 1, "Please input the flg that is  Whether run copy files script. [true]:yes ,[false]:no")
     XmlAnalysis.annalysis("conf/logconf.xml")
+    // -----------------------------------------------
     // 是否运行拷贝文件脚本
     val copy_flg = args(0).toBoolean
-    if (copy_flg) {
-      val hDFSCopy = new HDFSCopy()
-      val flg = hDFSCopy.scanStart
-    }
+    if (copy_flg) new Thread(new HDFSCopy()).start()
+    // -----------------------------------------------
 
     val AppPropertiesMap = XmlAnalysis.getAppPropertiesMap
     val logStructMap = XmlAnalysis.getLogStructMap
@@ -43,12 +42,8 @@ object MixRateApp extends Logging {
     val expose_threshold = AppPropertiesMap("expose_threshold")
     val checkpointPath = AppPropertiesMap("checkpointPath")
 
-    // TODO
-    val master = "local[2]"
-    val ssc = new StreamingContext(master, appName, Seconds(streamSpace.toInt), System.getenv("SPARK_HOME"))
-
-    //    val sparkConf = new SparkConf().setAppName(appName)
-    //    val ssc = new StreamingContext(sparkConf, Seconds(streamSpace.toInt))
+    val sparkConf = new SparkConf().setAppName(appName)
+    val ssc = new StreamingContext(sparkConf, Seconds(streamSpace.toInt))
 
     ssc.checkpoint(checkpointPath)
     val dstreamList = logStructMap.map(log => {

@@ -18,14 +18,14 @@ import java.io.FileWriter
  * @since 2014.11.6
  * scan HDFS files and copy files.
  */
-class HDFSCopy {
+class HDFSCopy extends Runnable {
   // hdfs files handling start time.
   val xmlPropMap = XmlAnalysis.getHdfsScannerMap
   val filesstartTime = xmlPropMap("hdfsStartTime")
   val logStructMap = XmlAnalysis.getLogStructMap
 
   var historyRddWriter: FileWriter = _
-  
+
   val conf = new Configuration()
   //local test 用
   conf.addResource(new Path("conf/core-site.xml"))
@@ -34,14 +34,14 @@ class HDFSCopy {
   /**
    * start all file-scanner threads.
    */
-  def scanStart = {
+  override def run = {
 
     // load last history file and created new history file. 
     val historyFileCreate = new HistoryFileCreate(HDFSFileSytem)
     historyFileCreate.doHistoryAction
     // from history screw to rdd-history-Map.
     val historyrddMap = historyFileCreate.getHistoryrddMap
-    
+
     // and return history file writer
     historyRddWriter = historyFileCreate.getHistoryRddWriter
     val newFileQueue = new LinkedBlockingQueue[(String, Array[String])]()
@@ -79,11 +79,15 @@ class HDFSCopy {
     } finally {
       IOUtils.closeStream(in)
       IOUtils.closeStream(out)
-      if (return_flg) {
-        HDFSFileSytem.rename(new Path(toPath + tempName), new Path(rename))
-        historyRddWriter.write(fromFile + System.getProperty("line.separator"))
-        historyRddWriter.flush
-      } else HDFSFileSytem.delete(new Path(toPath + tempName))
+      try {
+        if (return_flg) {
+          HDFSFileSytem.rename(new Path(toPath + tempName), new Path(rename))
+          historyRddWriter.write(fromFile + System.getProperty("line.separator"))
+          historyRddWriter.flush
+        } else HDFSFileSytem.delete(new Path(toPath + tempName))
+      } catch {
+        case e: Exception => e.printStackTrace()
+      }
     }
   }
 
@@ -91,7 +95,7 @@ class HDFSCopy {
    * file filter
    */
   def fileFilter(filePath: String) = {
-     val fileName = filePath.substring(filePath.lastIndexOf(System.getProperty("file.separator")) + 1)
+    val fileName = filePath.substring(filePath.lastIndexOf(System.getProperty("file.separator")) + 1)
     if (fileName.startsWith("_") || fileName.startsWith(".") || fileName.endsWith("._COPYING_")) false else true
   }
   // if (fileName.matches(".*(._COPYING_)$") || fileName.matches("/[_|.].*")) false else true
