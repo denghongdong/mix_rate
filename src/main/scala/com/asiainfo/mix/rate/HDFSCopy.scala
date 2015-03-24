@@ -27,6 +27,9 @@ class HDFSCopy extends Runnable {
   var historyRddWriter: FileWriter = _
 
   val conf = new Configuration()
+  //  //local test 用
+  // TODO
+  //  conf.addResource(new Path("conf/core-site.xml"))
   val HDFSFileSytem = FileSystem.get(conf)
 
   /**
@@ -47,14 +50,27 @@ class HDFSCopy extends Runnable {
     logStructMap.map(f => {
       new Thread(new FileMonitor(HDFSFileSytem, historyrddMap, f, newFileQueue)).start()
     })
-    while (true) {
-      val newFiles = newFileQueue.take()
-      val desPath = newFiles._1
-      val fileList = newFiles._2
-      fileList.map(f => {
-        if (fileFilter(f)) copyFileToHdfs(f, desPath)
-      })
-    }
+
+    //    while (true) {
+    //      val newFiles = newFileQueue.take()
+    //      val desPath = newFiles._1
+    //      val fileList = newFiles._2
+    //      fileList.map(f => {
+    //        if (fileFilter(f)) copyFileToHdfs(f, desPath)
+    //      })
+    //    }
+    new Thread(new Runnable {
+      override def run() {
+        while (true) {
+          val newFiles = newFileQueue.take()
+          val desPath = newFiles._1
+          val fileList = newFiles._2
+          fileList.map(f => {
+            if (fileFilter(f)) copyFileToHdfs(f, desPath)
+          })
+        }
+      }
+    }).start()
   }
 
   /**
@@ -63,7 +79,7 @@ class HDFSCopy extends Runnable {
    */
   private def copyFileToHdfs(fromFile: String, toPath: String): Boolean = {
     val fileName = fromFile.substring(fromFile.lastIndexOf(System.getProperty("file.separator")) + 1)
-    val tempName = System.getProperty("file.separator") + "_" + fileName
+    val tempName = System.getProperty("file.separator") + "." + fileName
     val rename = toPath + System.getProperty("file.separator") + fileName
     val in = new BufferedInputStream(HDFSFileSytem.open(new Path(fromFile)))
     val out = HDFSFileSytem.create(new Path(toPath + tempName))

@@ -13,7 +13,7 @@ import scala.collection.mutable.ArrayBuffer
  * @since 2014.10.30
  * 共通函数<br>
  */
-object Commonhandles extends Logging {
+object Commonhandles {
 
   /**
    * compute output items's count.

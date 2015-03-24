@@ -6,7 +6,7 @@
 		<output_suffix>rate</output_suffix>
 		<separator></separator>
 		<!--test tmp start -->
-		<expose_threshold>2000</expose_threshold>
+		<expose_threshold>150</expose_threshold>
 		<checkpointPath>/home/hadoop/test/checkpoint</checkpointPath>
 		<!--test tmp end -->
 		<msgStruct>[rowkey],bid.[count],expose.[count],click.[count],expose.cost</msgStruct>
@@ -29,7 +29,7 @@
 			<topicLogType>click</topicLogType>
 			<appClass>com.asiainfo.mix.rate.impl.Click</appClass>
 			<sourceHDFSPath>/sparktest/clickinput</sourceHDFSPath>
-			<hdfsPath>/test/clickinput</hdfsPath>
+			<hdfsPath>/home/hadoop/test/click</hdfsPath>
 			<items>loglen,logver,logtime,playid,adid,orderid,activityid,ex_uid,gender,cookie,streamsrc,clientip,ua,referer,loadpage,playstyle,playlocation,pageid,userinteristeid,areaid,sizeid,ad_pos_id,bidtime,cheatflag,day_id,hour_id</items>
 			<groupByKey>ad_pos_id</groupByKey>
 			<outputItems>[count]</outputItems>
@@ -38,7 +38,7 @@
 			<topicLogType>expose</topicLogType>
 			<appClass>com.asiainfo.mix.rate.impl.Expose</appClass>
 			<sourceHDFSPath>/sparktest/exposeinput</sourceHDFSPath>
-			<hdfsPath>/test/exposeinput</hdfsPath>
+			<hdfsPath>/home/hadoop/test/expose</hdfsPath>
 			<items>loglen,logver,logtime,cost,playid,adid,orderid,activityid,ex_uid,gender,cookie,streamsrc,clientip,ua,referer,playstyle,playlocation,pageid,userinteristeid,areaid,sizeid,ad_pos_id,bidtime,cheatflag,day_id,hour_id</items>
 			<groupByKey>ad_pos_id</groupByKey>
 			<outputItems>[count],cost</outputItems>
@@ -47,7 +47,7 @@
 			<topicLogType>bid</topicLogType>
 			<appClass>com.asiainfo.mix.rate.impl.Bid</appClass>
 			<sourceHDFSPath>/sparktest/bidinput</sourceHDFSPath>
-			<hdfsPath>/test/bidinput</hdfsPath>
+			<hdfsPath>/home/hadoop/test/bid</hdfsPath>
 			<items>loglen,logver,logtype,logtime,exchange_id,bid_id,client_id,area_id,exchange_userid,useragent,usergender,url,mediasite_id,pageid,keyword,baiduinteristedid,exceptindustry,ad_pos_info,joinbid_ad_num,joinbid_ad_info,insert,paid,app_id,app_name,device_type,os,ctr_value,mobile,device_id,mac,connection
 				type,carrier,app_category,idfa,handletime</items>
 			<groupByKey>ad_pos_info</groupByKey>
